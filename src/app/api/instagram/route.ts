@@ -40,10 +40,17 @@ export async function POST(request: Request) {
     /* 1️⃣ Tunggu profile header */
     await page.waitForSelector("#instagram-downloader-profile");
 
-    /* 2️⃣ Tunggu list post muncul */
-    await page.waitForSelector(
-      'div[class*="InstagramViewerPost-module__post"]'
-    );
+    const isPrivate = await page.evaluate(() => {
+      const alert = document.querySelector(
+        'div[class*="InstagramViewerAlert-module__title"]'
+      );
+
+      if (!alert) return false;
+
+      const text = alert.textContent?.toLowerCase() || "";
+
+      return text.includes("private");
+    });
 
     /* 3️⃣ Kasih delay kecil untuk hydration / async render */
     await page.waitForTimeout(1500);
@@ -73,35 +80,56 @@ export async function POST(request: Request) {
       const posts = stats[0]?.textContent?.trim();
       const follower = stats[1]?.textContent?.trim();
 
-      const list = Array.from(
-        document.querySelectorAll(
-          'div[class*="InstagramViewerPost-module__post"]'
-        )
-      ).map((post) => {
-        const image = post
-          .querySelector('img[class*="InstagramViewerPost-module__image"]')
-          ?.getAttribute("src");
-
-        return {
-          image,
-        };
-      });
-
       return {
         avatar,
         username,
         bio,
         posts_count: posts,
         follower_count: follower,
-        posts: list,
       };
+    });
+
+    if (isPrivate) {
+      await browser.close();
+
+      return NextResponse.json({
+        success: true,
+        message: "Instagram profile is private",
+        data: { ...profile, private: true },
+      });
+    }
+
+    /* 2️⃣ Tunggu list post muncul */
+    await page.waitForSelector(
+      'div[class*="InstagramViewerPost-module__post"]'
+    );
+
+    const posts = await page.evaluate(() => {
+      const list = Array.from(
+        document.querySelectorAll(
+          'div[class*="InstagramViewerPost-module__post"]'
+        )
+      )
+        .slice(0, 6)
+        .map((post) => {
+          const image = post
+            .querySelector('img[class*="InstagramViewerPost-module__image"]')
+            ?.getAttribute("src");
+
+          return {
+            image,
+          };
+        });
+
+      return list;
     });
 
     await browser.close();
 
     return NextResponse.json({
       success: true,
-      data: profile,
+      message: "success",
+      data: { ...profile, posts, private: false },
     });
   } catch {
     if (browser) await browser.close();

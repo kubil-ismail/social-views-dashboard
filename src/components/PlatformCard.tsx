@@ -16,6 +16,8 @@ import {
   Instagram,
   Eye,
   Calendar,
+  Lock,
+  Ban,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +31,7 @@ interface ContentItem {
 
 interface PlatformCardProps {
   id: string;
+  isPrivate: boolean;
   platform: "tiktok" | "youtube" | "instagram";
   username?: string;
   profilePhoto?: string;
@@ -69,6 +72,7 @@ const platformConfig = {
 
 export function PlatformCard({
   id,
+  isPrivate,
   platform,
   username,
   profilePhoto,
@@ -276,6 +280,32 @@ export function PlatformCard({
                       ))}
                     </div>
                   </ScrollArea>
+                </div>
+              </>
+            )}
+
+            {contentItems && contentItems.length === 0 && (
+              <>
+                <Separator />
+
+                <div className="flex items-center justify-center flex-col gap-5 min-h-[150px] pt-7">
+                  <Ban size={50} />
+                  <h4 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                    No posts yet
+                  </h4>
+                </div>
+              </>
+            )}
+
+            {isPrivate && contentItems.length === 0 && (
+              <>
+                <Separator />
+
+                <div className="flex items-center justify-center flex-col gap-5 min-h-[150px] pt-7">
+                  <Lock size={50} />
+                  <h4 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                    This account is private
+                  </h4>
                 </div>
               </>
             )}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/purity */
 "use client";
 import { useState } from "react";
@@ -22,6 +23,7 @@ interface AccountCard {
   profilePhoto: string;
   totalPosts: number;
   totalFollowers: number;
+  private: boolean;
   contentItems: Array<{
     id: string;
     thumbnail: string;
@@ -40,29 +42,133 @@ export default function Views() {
   const [cards, setCards] = useState<AccountCard[]>([]);
   const [searching, setSearching] = useState(false);
 
-  const generateMockData = (platform: string, username: string) => {
-    const baseViews = Math.floor(Math.random() * 50000000) + 10000000;
-    const contentCount = 5;
+  const generateInstagramData = async (id: string, card: AccountCard) => {
+    try {
+      const request = await fetch("/api/instagram", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: card.username }),
+      }).then((response) => response.json());
 
-    return {
-      profilePhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-      totalPosts: baseViews,
-      contentItems: Array.from({ length: contentCount }, (_, i) => ({
-        id: `${platform}-${username}-${i}-${Date.now()}`,
-        thumbnail: `https://picsum.photos/seed/${username}-${platform}-${i}-${Date.now()}/400/400`,
-        title: `${
-          platform === "tiktok"
-            ? "Viral"
-            : platform === "youtube"
-            ? "Amazing"
-            : "Beautiful"
-        } content from @${username} #${i + 1}`,
-        views: Math.floor(Math.random() * 5000000) + 100000,
-        publishedAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-      })),
-    };
+      const response = request.data;
+
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === id
+            ? {
+                ...card,
+                ...{
+                  profilePhoto: response?.avatar,
+                  totalPosts: response?.posts_count,
+                  totalFollowers: response?.follower_count,
+                  private: response?.private,
+                  contentItems:
+                    response?.posts?.map((item: any, index: number) => ({
+                      id: `${selectedPlatform}-${
+                        response.username
+                      }-${index}-${Date.now()}`,
+                      thumbnail: item.image,
+                      title: ``,
+                      views: "-",
+                      publishedAt: "-",
+                    })) ?? [],
+                },
+                loading: false,
+              }
+            : card
+        )
+      );
+    } catch (error) {
+      console.log("wroonnggg");
+    }
+  };
+
+  const generateTiktokData = async (id: string, card: AccountCard) => {
+    try {
+      const request = await fetch("/api/tiktok", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: card.username }),
+      }).then((response) => response.json());
+
+      const response = request.data;
+
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === id
+            ? {
+                ...card,
+                ...{
+                  profilePhoto: response?.avatar,
+                  totalPosts: response?.posts_count,
+                  totalFollowers: response?.follower_count,
+                  private: response?.private,
+                  contentItems:
+                    response?.posts?.map((item: any, index: number) => ({
+                      id: `${selectedPlatform}-${
+                        response.username
+                      }-${index}-${Date.now()}`,
+                      thumbnail: item.image,
+                      title: ``,
+                      views: "-",
+                      publishedAt: "-",
+                    })) ?? [],
+                },
+                loading: false,
+              }
+            : card
+        )
+      );
+    } catch (error) {
+      console.log("wroonnggg");
+    }
+  };
+
+  const generateYoutubeData = async (id: string, card: AccountCard) => {
+    try {
+      const request = await fetch("/api/youtube", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: card.username }),
+      }).then((response) => response.json());
+
+      const response = request.data;
+
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === id
+            ? {
+                ...card,
+                ...{
+                  profilePhoto: response?.avatar,
+                  totalPosts: response?.posts_count,
+                  totalFollowers: response?.follower_count,
+                  private: response?.private,
+                  contentItems:
+                    response?.posts?.map((item: any, index: number) => ({
+                      id: `${selectedPlatform}-${
+                        response.username
+                      }-${index}-${Date.now()}`,
+                      thumbnail: item.image,
+                      title: ``,
+                      views: "-",
+                      publishedAt: "-",
+                    })) ?? [],
+                },
+                loading: false,
+              }
+            : card
+        )
+      );
+    } catch (error) {
+      console.log("wroonnggg");
+    }
   };
 
   const handleSearch = async () => {
@@ -79,49 +185,30 @@ export default function Views() {
       contentItems: [],
       isPinned: false,
       loading: true,
+      private: false,
     };
 
     setCards((prev) => [newCard, ...prev]);
     setSearching(true);
     setSearchUsername("");
 
-    const request = await fetch("/api/instagram", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    switch (selectedPlatform) {
+      case "instagram":
+        generateInstagramData(cardId, newCard);
+        break;
 
-      body: JSON.stringify({ username: searchUsername }),
-    }).then((response) => response.json());
+      case "tiktok":
+        generateTiktokData(cardId, newCard);
+        break;
 
-    const response = request.data;
+      case "youtube":
+        generateYoutubeData(cardId, newCard);
+        break;
 
-    console.log(response);
+      default:
+        console.log("wroonngg");
+    }
 
-    setCards((prev) =>
-      prev.map((card) =>
-        card.id === cardId
-          ? {
-              ...card,
-              ...{
-                profilePhoto: response.avatar,
-                totalPosts: response.posts_count,
-                totalFollowers: response.follower_count,
-                contentItems: response.posts.map((item: any, index) => ({
-                  id: `${selectedPlatform}-${
-                    response.username
-                  }-${index}-${Date.now()}`,
-                  thumbnail: item.image,
-                  title: ``,
-                  views: "-",
-                  publishedAt: "-",
-                })),
-              },
-              loading: false,
-            }
-          : card
-      )
-    );
     setSearching(false);
   };
 
@@ -133,16 +220,25 @@ export default function Views() {
     const card = cards.find((c) => c.id === id);
     if (!card) return;
 
+    switch (card.platform) {
+      case "instagram":
+        generateInstagramData(id, card);
+        break;
+
+      case "tiktok":
+        generateTiktokData(id, card);
+        break;
+
+      case "youtube":
+        generateYoutubeData(id, card);
+        break;
+
+      default:
+        console.log("wroonngg");
+    }
+
     setCards((prev) =>
       prev.map((c) => (c.id === id ? { ...c, loading: true } : c))
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const mockData = generateMockData(card.platform, card.username);
-
-    setCards((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...mockData, loading: false } : c))
     );
   };
 
@@ -199,20 +295,6 @@ export default function Views() {
                     <span>TikTok</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="youtube">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 flex items-center justify-center">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="#FF0000"
-                        className="h-4 w-4"
-                      >
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                      </svg>
-                    </div>
-                    <span>YouTube</span>
-                  </div>
-                </SelectItem>
                 <SelectItem value="instagram">
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 flex items-center justify-center">
@@ -238,6 +320,20 @@ export default function Views() {
                       </svg>
                     </div>
                     <span>Instagram</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="youtube">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 flex items-center justify-center">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="#FF0000"
+                        className="h-4 w-4"
+                      >
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                      </svg>
+                    </div>
+                    <span>YouTube</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -287,6 +383,7 @@ export default function Views() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {cards.map((card) => (
               <PlatformCard
+                isPrivate={card.private}
                 key={card.id}
                 id={card.id}
                 platform={card.platform}
