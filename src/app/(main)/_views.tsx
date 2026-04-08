@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 "use client";
 import { useState } from "react";
 import { PlatformCard } from "@/components/PlatformCard";
@@ -12,12 +13,15 @@ import {
 } from "@/components/ui/select";
 import { Music2, Search, X, TrendingUp } from "lucide-react";
 
+type Platform = "tiktok" | "youtube" | "instagram";
+
 interface AccountCard {
   id: string;
-  platform: "tiktok" | "youtube" | "instagram";
+  platform: Platform;
   username: string;
   profilePhoto: string;
-  totalViews: number;
+  totalPosts: number;
+  totalFollowers: number;
   contentItems: Array<{
     id: string;
     thumbnail: string;
@@ -30,10 +34,8 @@ interface AccountCard {
   error?: string;
 }
 
-export default function App() {
-  const [selectedPlatform, setSelectedPlatform] = useState<
-    "tiktok" | "youtube" | "instagram"
-  >("tiktok");
+export default function Views() {
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("tiktok");
   const [searchUsername, setSearchUsername] = useState("");
   const [cards, setCards] = useState<AccountCard[]>([]);
   const [searching, setSearching] = useState(false);
@@ -44,7 +46,7 @@ export default function App() {
 
     return {
       profilePhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-      totalViews: baseViews,
+      totalPosts: baseViews,
       contentItems: Array.from({ length: contentCount }, (_, i) => ({
         id: `${platform}-${username}-${i}-${Date.now()}`,
         thumbnail: `https://picsum.photos/seed/${username}-${platform}-${i}-${Date.now()}/400/400`,
@@ -72,7 +74,8 @@ export default function App() {
       platform: selectedPlatform,
       username: searchUsername,
       profilePhoto: "",
-      totalViews: 0,
+      totalPosts: 0,
+      totalFollowers: 0,
       contentItems: [],
       isPinned: false,
       loading: true,
@@ -82,13 +85,41 @@ export default function App() {
     setSearching(true);
     setSearchUsername("");
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const request = await fetch("/api/instagram", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-    const mockData = generateMockData(selectedPlatform, searchUsername);
+      body: JSON.stringify({ username: searchUsername }),
+    }).then((response) => response.json());
+
+    const response = request.data;
+
+    console.log(response);
 
     setCards((prev) =>
       prev.map((card) =>
-        card.id === cardId ? { ...card, ...mockData, loading: false } : card
+        card.id === cardId
+          ? {
+              ...card,
+              ...{
+                profilePhoto: response.avatar,
+                totalPosts: response.posts_count,
+                totalFollowers: response.follower_count,
+                contentItems: response.posts.map((item: any, index) => ({
+                  id: `${selectedPlatform}-${
+                    response.username
+                  }-${index}-${Date.now()}`,
+                  thumbnail: item.image,
+                  title: ``,
+                  views: "-",
+                  publishedAt: "-",
+                })),
+              },
+              loading: false,
+            }
+          : card
       )
     );
     setSearching(false);
@@ -156,7 +187,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row items-center gap-3">
             <Select
               value={selectedPlatform}
-              onValueChange={(value: any) => setSelectedPlatform(value)}
+              onValueChange={(value: Platform) => setSelectedPlatform(value)}
             >
               <SelectTrigger className="w-full md:w-[200px] h-12 rounded-xl">
                 <SelectValue placeholder="Select platform" />
@@ -232,7 +263,7 @@ export default function App() {
 
             <Button
               onClick={handleSearch}
-              disabled={!searchUsername.trim() || searching}
+              // disabled={!searchUsername.trim() || searching}
               className="h-9 rounded-xl px-8 shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all active:scale-95"
             >
               <Search className="h-5 w-5 mr-2" />
@@ -261,7 +292,8 @@ export default function App() {
                 platform={card.platform}
                 username={card.username}
                 profilePhoto={card.profilePhoto}
-                totalViews={card.totalViews}
+                totalFollowers={card.totalFollowers}
+                totalPosts={card.totalPosts}
                 contentItems={card.contentItems}
                 loading={card.loading}
                 error={card.error}
