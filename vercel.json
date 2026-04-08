@@ -1,6 +1,12 @@
 {
   "functions": {
-    "api/*.js": {
+    "api/instagram/**/*.js": {
+      "maxDuration": 30
+    },
+    "api/tiktok/**/*.js": {
+      "maxDuration": 30
+    },
+    "api/youtube/**/*.js": {
       "maxDuration": 30
     }
   }
