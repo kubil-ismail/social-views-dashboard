@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     await page.goto(
       `https://inflact.com/instagram-viewer/?profile=${_username}`,
       {
-        waitUntil: "domcontentloaded",
+        waitUntil: "networkidle",
         timeout: 60000,
       }
     );

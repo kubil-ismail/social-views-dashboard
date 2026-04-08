@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const page = await context.newPage();
 
     await page.goto(`https://www.tikvib.com/profile/${_username}`, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle",
       timeout: 60000,
     });
 
