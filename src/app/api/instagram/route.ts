@@ -131,12 +131,13 @@ export async function POST(request: Request) {
       message: "success",
       data: { ...profile, posts, private: false },
     });
-  } catch {
+  } catch (err) {
     if (browser) await browser.close();
 
     return NextResponse.json({
       success: false,
       message: "Something wrong",
+      error: err instanceof Error ? err.message : String(err),
     });
   }
 }
