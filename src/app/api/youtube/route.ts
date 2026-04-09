@@ -13,7 +13,14 @@ export async function POST(request: Request) {
 
   try {
     browser = await playwright.launch({
-      args: chromium.args,
+      args: [
+        ...chromium.args,
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--single-process",
+        "--no-zygote",
+      ],
       executablePath: await chromium.executablePath(),
       headless: true,
     });
