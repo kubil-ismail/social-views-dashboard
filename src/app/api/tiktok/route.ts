@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         "--no-zygote",
       ],
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: true,
     });
 
     const context = await browser.newContext({
